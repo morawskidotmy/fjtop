@@ -188,7 +188,7 @@ class UI:
         host_net_rx: int = 0,
         host_net_tx: int = 0,
     ) -> None:
-        self.stdscr.clear()
+        self.stdscr.erase()
         h, w = self.stdscr.getmaxyx()
         if h < 3 or w < 40:
             self.stdscr.refresh()

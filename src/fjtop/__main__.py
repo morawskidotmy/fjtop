@@ -9,7 +9,7 @@ from .display import SORT_ALIASES, UI
 def _parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         prog="fjtop",
-        description="htop-like monitor for Firejail containers",
+        description="top-like monitor for Firejail containers",
     )
     parser.add_argument(
         "-d",

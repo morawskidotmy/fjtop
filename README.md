@@ -2,11 +2,11 @@
 
 # fjtop
 
-**htop-like monitor for Firejail containers**
+**top-like monitor for Firejail containers**
 
 [![Python](https://img.shields.io/badge/Python-≥3.11-3776AB?style=flat-square&logo=python)](https://python.org)
 [![Ruff](https://img.shields.io/badge/Ruff-ok-5ed9c7?style=flat-square)](https://github.com/astral-sh/ruff)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-AGPL--3.0-blue?style=flat-square)](LICENSE)
 
 [Installation](#installation) • [Usage](#usage) • [Keyboard Shortcuts](#keyboard-shortcuts) • [Columns](#columns) • [Configuration](#configuration)
 
@@ -19,13 +19,13 @@ A live-updating terminal dashboard for monitoring Firejail sandboxes. Shows CPU,
 ### With uv (recommended)
 
 ```bash
-uv tool install git+https://github.com/your-username/fjtop
+uv tool install git+https://github.com/morawskidotmy/fjtop
 ```
 
 ### From source
 
 ```bash
-git clone https://github.com/your-username/fjtop && cd fjtop
+git clone https://github.com/morawskidotmy/fjtop && cd fjtop
 uv tool install .
 ```
 
@@ -113,7 +113,7 @@ The UI is built with Python's `curses` module for proper terminal handling, keyb
 ## Development
 
 ```bash
-git clone https://github.com/your-username/fjtop && cd fjtop
+git clone https://github.com/morawskidotmy/fjtop && cd fjtop
 uv sync              # create venv and install deps
 uv run pytest        # run tests
 uv run ruff check .  # lint

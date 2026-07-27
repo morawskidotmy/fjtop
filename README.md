@@ -12,7 +12,7 @@
 
 </div>
 
-A live-updating terminal dashboard for monitoring Firejail sandboxes. Shows CPU, memory, and runtime metrics for each container, plus host network totals in the status bar.
+A live-updating terminal dashboard for monitoring Firejail sandboxes. Shows aggregated CPU, memory, and runtime metrics for each container (including all child processes), plus host network totals in the status bar.
 
 ## Installation
 
@@ -85,10 +85,10 @@ options:
 |---|---|---|
 | `PID` | `firejail --list` | Process ID of the Firejail process |
 | `USER` | `firejail --list` | Owner of the sandbox |
-| `CPU%` | `/proc/<pid>/stat` | CPU usage since last refresh (color-coded) |
-| `MEM%` | `/proc/<pid>/status` | RSS / total physical memory (color-coded) |
-| `RSS` | `/proc/<pid>/status` | Resident set size |
-| `TIME+` | `/proc/<pid>/stat` | Cumulative CPU time consumed |
+| `CPU%` | `/proc/<pid>/*/stat` | Aggregated CPU usage across all container processes (color-coded) |
+| `MEM%` | `/proc/<pid>/*/status` | Aggregated RSS / total physical memory (color-coded) |
+| `RSS` | `/proc/<pid>/*/status` | Aggregated resident set size across all container processes |
+| `TIME+` | `/proc/<pid>/*/stat` | Aggregated cumulative CPU time consumed |
 | `AGE` | `/proc/<pid>/stat` | Wall-clock time since sandbox started |
 | `PROCESS` | `firejail --list` | Application running inside the sandbox |
 
@@ -106,7 +106,7 @@ show_tree = false
 
 ## How it works
 
-`fjtop` parses `firejail --list` to discover active containers, then reads per-process stats from `/proc/<pid>/status` and `/proc/<pid>/stat` — no elevated privileges needed. The application name shown in the `PROCESS` column is extracted from the firejail command line, so `firejail --args -- /path/to/app` displays as `app`.
+`fjtop` parses `firejail --list` to discover active containers, then reads stats from `/proc/<pid>/task/<pid>/children` to find all processes in each container. CPU, memory, and time metrics are aggregated across all descendant processes — no elevated privileges needed. The application name shown in the `PROCESS` column is extracted from the firejail command line, so `firejail --args -- /path/to/app` displays as `app`.
 
 The UI is built with Python's `curses` module for proper terminal handling, keyboard input, and colors. CPU usage is computed as a delta between ticks, and host network totals are shown in the status bar from `/proc/net/dev`. Color thresholds can be customized in the config file.
 

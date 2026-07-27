@@ -34,7 +34,7 @@ class Collector:
         page_size: int = os.sysconf(os.sysconf_names["SC_PAGE_SIZE"])
         phys_pages: int = os.sysconf(os.sysconf_names["SC_PHYS_PAGES"])
         self._total_mem: int = phys_pages * page_size
-        self._prev_cpu: dict[int, float] = {}
+        self._prev_cpu: dict[int, tuple[float, float]] = {}
 
     @property
     def total_mem(self) -> int:
@@ -132,15 +132,18 @@ class Collector:
             except (OSError, ValueError, IndexError):
                 continue
 
-            prev_cpu = self._prev_cpu.get(pid, 0.0)
-            dt = now - prev_cpu if prev_cpu else 0.0
-
-            if prev_cpu and dt > 0:
-                dcpu = cpu_total - prev_cpu
-                cpu_pct = dcpu / self._clock_ticks / dt * 100
+            prev_data = self._prev_cpu.get(pid)
+            if prev_data:
+                prev_cpu_total, prev_time = prev_data
+                dt = now - prev_time
+                if dt > 0:
+                    dcpu = cpu_total - prev_cpu_total
+                    cpu_pct = dcpu / self._clock_ticks / dt * 100
+                else:
+                    cpu_pct = 0.0
             else:
                 cpu_pct = 0.0
-            self._prev_cpu[pid] = cpu_total
+            self._prev_cpu[pid] = (cpu_total, now)
 
             mem_pct = total_rss / self._total_mem * 100 if self._total_mem else 0
 

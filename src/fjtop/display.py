@@ -68,6 +68,7 @@ class UI:
         self.stdscr.keypad(True)
         self.stdscr.timeout(1000)
         self.stdscr.clear()
+        self._prev_frame: dict[tuple[int, int], tuple[str, int]] = {}
 
         self.has_colors = curses.has_colors()
         if self.has_colors:
@@ -135,7 +136,8 @@ class UI:
     def _safe_addstr(self, row: int, col: int, text: str, attr: int = 0) -> None:
         if row < 0:
             return
-        h, w = self.stdscr.getmaxyx()
+        h = getattr(self, "_screen_h", self.stdscr.getmaxyx()[0])
+        w = getattr(self, "_screen_w", self.stdscr.getmaxyx()[1])
         if row >= h or col >= w:
             return
         if col < 0:
@@ -148,8 +150,13 @@ class UI:
         if avail <= 0:
             return
         text = text[:avail]
-        with contextlib.suppress(curses.error):
-            self.stdscr.addstr(row, col, text, attr)
+
+        # Write to buffer if in build mode, otherwise write directly
+        if hasattr(self, "_buffer") and self._buffer is not None:
+            self._buffer[(row, col)] = (text, attr)
+        else:
+            with contextlib.suppress(curses.error):
+                self.stdscr.addstr(row, col, text, attr)
 
     def read_filter(self) -> str:
         h, _w = self.stdscr.getmaxyx()
@@ -188,11 +195,16 @@ class UI:
         host_net_rx: int = 0,
         host_net_tx: int = 0,
     ) -> None:
-        self.stdscr.erase()
         h, w = self.stdscr.getmaxyx()
         if h < 3 or w < 40:
             self.stdscr.refresh()
             return
+
+        # Build new frame in buffer
+        new_frame: dict[tuple[int, int], tuple[str, int]] = {}
+        self._buffer = new_frame
+        self._screen_w = w
+        self._screen_h = h
 
         row = 0
         ts = self._ts()
@@ -213,31 +225,39 @@ class UI:
 
         if show_help:
             self._draw_help(row, h, w)
-            self.stdscr.refresh()
-            return
-
-        if details:
+        elif details:
             self._draw_details(row, h, w, containers, selected_idx, details)
-            self.stdscr.refresh()
-            return
-
-        if not containers:
+        elif not containers:
             self._safe_addstr(row, 0, "No firejail containers running.", self._attr(6))
-            self.stdscr.refresh()
-            return
-
-        widths = _col_widths(w)
-        self._draw_header(row, widths, sort_attr, sort_reverse)
-        row += 1
-        self._hline(row, w)
-        row += 1
-
-        if tree_mode and tree_data:
-            self._draw_tree(row, h, w, containers, tree_data, widths)
         else:
-            self._draw_rows(row, h, w, containers, widths, selected_idx)
+            widths = _col_widths(w)
+            self._draw_header(row, widths, sort_attr, sort_reverse)
+            row += 1
+            self._hline(row, w)
+            row += 1
 
+            if tree_mode and tree_data:
+                self._draw_tree(row, h, w, containers, tree_data, widths)
+            else:
+                self._draw_rows(row, h, w, containers, widths, selected_idx)
+
+        # Apply frame with diffing
+        self._apply_frame(new_frame)
+        self._buffer = None
         self.stdscr.refresh()
+
+    def _apply_frame(self, new_frame: dict[tuple[int, int], tuple[str, int]]) -> None:
+        # Update changed cells
+        for (row, col), (text, attr) in new_frame.items():
+            if self._prev_frame.get((row, col)) != (text, attr):
+                self.stdscr.addstr(row, col, text, attr)
+
+        # Clear cells that were in prev but not in new
+        for row, col in self._prev_frame:
+            if (row, col) not in new_frame:
+                self.stdscr.addstr(row, col, " " * len(self._prev_frame[(row, col)][0]))
+
+        self._prev_frame = new_frame.copy()
 
     def _ts(self) -> str:
         import time
@@ -245,8 +265,7 @@ class UI:
         return time.strftime("%H:%M:%S")
 
     def _hline(self, row: int, w: int) -> None:
-        with contextlib.suppress(curses.error):
-            self.stdscr.addstr(row, 0, "─" * (w - 1), self._attr(5))
+        self._safe_addstr(row, 0, "─" * (w - 1), self._attr(5))
 
     def _draw_header(self, row: int, widths: dict[str, int], sort_attr: str, reverse: bool) -> None:
         arrow = "↓" if reverse else "↑"

@@ -1,0 +1,27 @@
+[project]
+name = "fjtop"
+version = "0.1.0"
+description = "htop-like monitor for firejail containers"
+requires-python = ">=3.11"
+
+[project.scripts]
+fjtop = "fjtop.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "C901", "SIM", "PTH", "C4", "PIE", "RUF", "DTZ", "RET", "ARG", "PERF"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 15
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
